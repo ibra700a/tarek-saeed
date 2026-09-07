@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>منصة تعليم اللغة العربية</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --primary:#4f46e5; --primary-dark:#3730a3; --primary-light:#eef2ff;
+    --accent:#06b6d4; --bg:#f4f5f9; --card:#ffffff; --text:#1f2330;
+    --muted:#6b7280; --danger:#ef4444; --success:#10b981; --warning:#f59e0b;
+    --radius:16px; --shadow:0 4px 16px rgba(30,30,60,.08);
+  }
+  *{box-sizing:border-box; -webkit-user-select:auto;}
+  body{margin:0; font-family:'Segoe UI',Tahoma,Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh;}
+  .hidden{display:none !important;}
+  ::selection{background:var(--primary-light);}
+
+  /* ===== Gate / Welcome Screen ===== */
+  #gateScreen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .gate-box{background:#fff; padding:36px 28px; border-radius:22px; box-shadow:var(--shadow); width:100%; max-width:420px; text-align:center;}
+  .gate-box img{width:96px; height:96px; border-radius:50%; object-fit:cover; margin-bottom:16px; border:4px solid var(--primary-light);}
+  .gate-box h1{color:var(--primary-dark); margin:0 0 4px; font-size:21px; line-height:1.4;}
+  .gate-box .teacher-line{color:var(--muted); font-size:13.5px; margin-bottom:24px;}
+  .gate-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px; width:100%;
+    background:var(--primary); color:#fff; border:none; padding:16px; border-radius:14px;
+    cursor:pointer; font-size:16px; font-weight:700; margin-bottom:12px; transition:.2s;
+  }
+  .gate-btn:hover{background:var(--primary-dark);}
+  .gate-btn.alt{background:var(--accent);}
+  .gate-btn.alt:hover{background:#0891b2;}
+  .gate-back{margin-top:16px; background:none; border:none; color:var(--muted); font-size:13.5px; cursor:pointer; text-decoration:underline;}
+
+  /* ===== Login/Register screens ===== */
+  .login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;}
+  .login-box{background:#fff; padding:34px 28px; border-radius:20px; box-shadow:var(--shadow); width:100%; max-width:400px; text-align:center;}
+  .login-box img{width:76px; height:76px; border-radius:50%; object-fit:cover; margin-bottom:12px; border:3px solid var(--primary-light);}
+  .login-box h2{color:var(--primary-dark); margin-bottom:6px; font-size:19px;}
+  .login-box p{color:var(--muted); font-size:13.5px; margin-top:0; margin-bottom:20px;}
+  .login-box input, .login-box select{
+    width:100%; padding:13px 14px; margin-bottom:12px; border:1.5px solid #e2e4ec;
+    border-radius:10px; font-size:14.5px; font-family:inherit; background:#fbfbfe;
+  }
+  .login-box input:focus, .login-box select:focus{outline:none; border-color:var(--primary); background:#fff;}
+  .login-err{color:var(--danger); font-size:13px; min-height:18px; margin-bottom:6px;}
+  .login-back{margin-top:12px; background:none; border:none; color:var(--muted); font-size:13px; cursor:pointer; text-decoration:underline;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--primary); color:#fff; border:none;
+    padding:11px 18px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; transition:.2s; width:100%;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn:disabled{opacity:.6; cursor:not-allowed;}
+  .btn.small-wide{width:auto;}
+  .btn.secondary{background:#e5e7eb; color:#374151;}
+  .btn.secondary:hover{background:#d1d5db;}
+  .btn.danger{background:var(--danger);}
+  .btn.danger:hover{background:#c53030;}
+  .btn.success{background:var(--success);}
+  .btn.success:hover{background:#0d9668;}
+  .btn.small{padding:6px 12px; font-size:12.5px; width:auto;}
+
+  /* ===== App Header ===== */
+  header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff;
+    padding:16px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    box-shadow:var(--shadow); position:sticky; top:0; z-index:100;
+  }
+  header img.avatar{width:56px; height:56px; border-radius:50%; object-fit:cover; border:2.5px solid rgba(255,255,255,.8); background:#fff; flex:none;}
+  .brand-photo-wrap{position:relative; flex:none;}
+  .photo-edit-btn{
+    position:absolute; bottom:-4px; left:-4px; background:#fff; color:var(--primary);
+    border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:12px; box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  .brand-text{flex:1; min-width:140px;}
+  .brand-text h1{margin:0; font-size:17px; display:flex; align-items:center; gap:8px;}
+  .brand-text input.name-input{
+    background:transparent; border:none; color:#fff; font-size:17px; font-weight:700;
+    border-bottom:1px dashed rgba(255,255,255,.4); padding:2px 4px; max-width:220px;
+  }
+  .brand-text input.name-input:focus{outline:none; border-bottom:1px solid #fff;}
+  .brand-text p{margin:2px 0 0; font-size:12px; opacity:.9;}
+  nav{display:flex; gap:6px; flex-wrap:wrap; margin-inline-start:auto; align-items:center;}
+  nav button{
+    background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); color:#fff;
+    padding:8px 13px; border-radius:9px; cursor:pointer; font-size:12.5px; transition:.2s; white-space:nowrap;
+  }
+  nav button:hover{background:rgba(255,255,255,.28);}
+  nav button.active{background:#fff; color:var(--primary-dark); font-weight:700;}
+  .logout-btn{background:rgba(0,0,0,.2) !important;}
+  #studentWelcome{font-size:12.5px; background:rgba(255,255,255,.15); padding:6px 12px; border-radius:20px;}
+
+  main{max-width:1100px; margin:20px auto; padding:0 14px 60px;}
+  .section{display:none; animation:fadeIn .2s ease;}
+  .section.active{display:block;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:18px;}
+  .card h2{margin-top:0; font-size:17px; display:flex; align-items:center; gap:8px; color:var(--primary-dark); border-bottom:2px solid var(--primary-light); padding-bottom:10px;}
+  .card h3{color:var(--primary-dark); font-size:15px; margin:16px 0 10px;}
+  .form-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:12px;}
+  label{font-size:12.5px; color:var(--muted); display:block; margin-bottom:4px; font-weight:600;}
+  input[type=text],input[type=date],input[type=number],input[type=url],input[type=tel],input[type=password],textarea,select{
+    width:100%; padding:10px 12px; border:1.5px solid #e2e4ec; border-radius:10px; font-size:14px;
+    font-family:inherit; background:#fbfbfe; transition:.2s;
+  }
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--primary); background:#fff;}
+  textarea{resize:vertical; min-height:55px;}
+
+  table{width:100%; border-collapse:collapse; margin-top:8px; font-size:13.5px;}
+  thead tr{background:var(--primary-light);}
+  th,td{padding:9px 10px; text-align:right; border-bottom:1px solid #eef0f5;}
+  tbody tr:hover{background:#fafbff;}
+  th{color:var(--primary-dark); font-weight:700;}
+  .empty-msg{text-align:center; color:var(--muted); padding:22px; font-size:13.5px;}
+  .tag{display:inline-block; background:var(--primary-light); color:var(--primary-dark); padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600;}
+  .tag.orange{background:#fef3c7; color:#92400e;}
+  .tag.red{background:#fee2e2; color:#991b1b;}
+  .tag.green{background:#d1fae5; color:#065f46;}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .pdf-link{color:var(--accent); text-decoration:none; font-weight:600;}
+  .pdf-link:hover{text-decoration:underline;}
+  .grade-good{color:var(--success); font-weight:800;}
+  .grade-mid{color:var(--warning); font-weight:800;}
+  .grade-bad{color:var(--danger); font-weight:800;}
+
+  .stats-bar{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;}
+  .stat-box{
+    flex:1; min-width:130px; background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff;
+    padding:14px; border-radius:14px; text-align:center; box-shadow:var(--shadow);
+  }
+  .stat-box .num{font-size:23px; font-weight:800;}
+  .stat-box .lbl{font-size:11.5px; opacity:.9;}
+
+  /* ===== Stage Cards (اختيار المرحلة) ===== */
+  .stage-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:10px;}
+  .stage-card{
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; border-radius:18px;
+    padding:28px 20px; text-align:center; cursor:pointer; box-shadow:var(--shadow); transition:.2s; border:none;
+  }
+  .stage-card:hover{transform:translateY(-3px); box-shadow:0 8px 24px rgba(30,30,60,.18);}
+  .stage-card .icon{font-size:36px; margin-bottom:8px;}
+  .stage-card .name{font-size:16px; font-weight:700;}
+
+  /* ===== Stage sub-menu (قوائم المرحلة) ===== */
+  .stage-menu-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-top:10px;}
+  .stage-menu-item{
+    background:#fff; border:2px solid var(--primary-light); border-radius:14px; padding:20px 14px; text-align:center;
+    cursor:pointer; transition:.2s;
+  }
+  .stage-menu-item:hover{border-color:var(--primary); background:var(--primary-light);}
+  .stage-menu-item .icon{font-size:28px; margin-bottom:6px;}
+  .stage-menu-item .name{font-size:13.5px; font-weight:700; color:var(--primary-dark);}
+
+  /* ===== Curriculum category groups ===== */
+  .category-group{margin-bottom:18px;}
+  .category-title{
+    background:var(--primary-light); color:var(--primary-dark); font-weight:700; font-size:14px;
+    padding:9px 14px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; gap:6px;
+  }
+  .unit-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:10px 12px; border:1px solid #eef0f5; border-radius:10px; margin-bottom:6px;
+  }
+  .unit-item .unit-title{font-weight:600; font-size:13.5px;}
+  .unit-item .unit-notes{color:var(--muted); font-size:12px; margin-top:2px;}
+
+  /* ===== Exam-taking screen ===== */
+  #examTakingScreen{min-height:100vh; padding:16px; background:var(--bg);}
+  .exam-header-bar{
+    background:#fff; border-radius:14px; padding:14px 18px; box-shadow:var(--shadow); margin-bottom:16px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; position:sticky; top:10px; z-index:20;
+  }
+  .exam-timer{font-size:20px; font-weight:800; color:var(--danger); direction:ltr;}
+  .exam-timer.safe{color:var(--success);}
+  .exam-timer.warn{color:var(--warning);}
+  .question-card{background:#fff; border-radius:14px; padding:18px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .question-num{color:var(--primary); font-weight:700; font-size:13px; margin-bottom:6px;}
+  .question-text{font-size:15.5px; font-weight:600; margin-bottom:14px; line-height:1.6;}
+  .option-row{
+    display:flex; align-items:center; gap:10px; padding:12px 14px; border:1.5px solid #e2e4ec; border-radius:10px;
+    margin-bottom:8px; cursor:pointer; transition:.15s;
+  }
+  .option-row:hover{border-color:var(--primary); background:var(--primary-light);}
+  .option-row.selected{border-color:var(--primary); background:var(--primary-light); font-weight:700;}
+  .option-row input{margin:0;}
+
+  .violation-banner{
+    background:#fee2e2; color:#991b1b; padding:14px 18px; border-radius:12px; margin-bottom:14px;
+    font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:8px;
+  }
+  .locked-banner{
+    background:#1f2330; color:#fff; padding:30px 20px; border-radius:16px; text-align:center; margin:20px 0;
+  }
+  .locked-banner .icon{font-size:44px; margin-bottom:10px;}
+
+  /* ===== Correction screen (تصحيح المقالي) ===== */
+  .correction-item{border:1.5px solid #eef0f5; border-radius:12px; padding:14px; margin-bottom:10px;}
+  .correction-q{font-weight:700; color:var(--primary-dark); font-size:13.5px; margin-bottom:6px;}
+  .correction-answer{background:#fbfbfe; border-radius:8px; padding:10px 12px; font-size:13.5px; margin-bottom:10px; white-space:pre-wrap; line-height:1.6;}
+  .points-input-row{display:flex; align-items:center; gap:8px;}
+  .points-input-row input{width:80px;}
+
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:18px;}
+  .hidden-input{display:none;}
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1f2330; color:#fff; padding:12px 22px; border-radius:10px; font-size:13.5px;
+    opacity:0; pointer-events:none; transition:.3s; z-index:9999; max-width:90vw; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .toast.error{background:var(--danger);}
+  .info-box{background:var(--primary-light); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:var(--primary-dark);}
+  .breadcrumb{display:flex; align-items:center; gap:6px; margin-bottom:14px; font-size:13px; color:var(--muted); flex-wrap:wrap;}
+  .breadcrumb button{background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px; font-weight:600; padding:0;}
+  @media (max-width:640px){
+    header{padding:12px;}
+    nav{width:100%; justify-content:flex-start;}
+    .brand-text input.name-input{max-width:130px; font-size:14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- شاشة الترحيب الأولى -->
+<!-- ============================================================ -->
+<div id="gateScreen">
+  <div class="gate-box">
+    <img id="gatePhoto" src="" alt="">
+    <h1 id="gatePlatformName">منصة تعليم اللغة العربية</h1>
+    <div class="teacher-line" id="gateTeacherLine">للأستاذ الفاضل</div>
+    <button class="gate-btn" onclick="showScreen('teacherLoginScreen')">🔐 دخول المستر</button>
+    <button class="gate-btn alt" onclick="showScreen('studentLoginScreen')">🎓 دخول الطالب</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- شاشة تسجيل دخول المستر -->
+<!-- ============================================================ -->
+<div id="teacherLoginScreen" class="login-screen hidden">
+  <div class="login-box">
+    <h2>🔐 دخول المستر</h2>
+    <p>سجّل دخولك للوصول للوحة التحكم</p>
+    <input type="text" id="loginEmail" placeholder="البريد الإلكتروني">
+    <input type="password" id="loginPass" placeholder="كلمة السر">
+    <div id="teacherLoginError" class="login-err"></div>
+    <button class="btn" onclick="doTeacherLogin()">دخول</button>
+    <button class="login-back" onclick="showScreen('gateScreen')">← رجوع</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- شاشة تسجيل دخول / تسجيل الطالب -->
+<!-- ============================================================ -->
+<div id="studentLoginScreen" class="login-screen hidden">
+  <div class="login-box">
+    <img id="studentLoginPhoto" src="" alt="">
+    <h2 id="studentLoginPlatformName">منصة تعليم اللغة العربية</h2>
+    <p>أدخل رقم هاتفك للدخول</p>
+    <input type="tel" id="phoneInput" placeholder="مثال: 01012345678" dir="ltr" style="text-align:center;">
+
+    <!-- تظهر فقط لو الرقم جديد (مش مسجل) -->
+    <div id="newStudentFields" class="hidden">
+      <input type="text" id="newStudentName" placeholder="اكتب اسمك بالكامل">
+      <select id="newStudentStage">
+        <option value="">اختر المرحلة الدراسية</option>
+      </select>
+    </div>
+
+    <div id="studentLoginError" class="login-err"></div>
+    <button class="btn" id="studentLoginBtn" onclick="doStudentLogin()">دخول</button>
+    <button class="login-back" onclick="showScreen('gateScreen')">← رجوع</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- تطبيق المستر -->
+<!-- ============================================================ -->
+<div id="teacherApp" class="hidden">
+  <header>
+    <div class="brand-photo-wrap">
+      <img class="avatar" id="teacherPhoto" src="" alt="">
+      <button class="photo-edit-btn" onclick="document.getElementById('photoInput').click()" title="تغيير الصورة">✎</button>
+      <input type="file" id="photoInput" class="hidden-input" accept="image/*">
+    </div>
+    <div class="brand-text">
+      <h1><input type="text" id="teacherName" class="name-input" value=""></h1>
+      <p id="teacherSubtitleDisplay"></p>
+    </div>
+    <nav>
+      <button class="tab-btn t-tab active" data-tab="t-home">🏠 الرئيسية</button>
+      <button class="tab-btn t-tab" data-tab="t-stages">📚 المراحل</button>
+      <button class="tab-btn t-tab" data-tab="t-students">👨‍🎓 الطلاب</button>
+      <button class="tab-btn t-tab" data-tab="t-correction">✍️ تصحيح المقالي</button>
+      <button class="tab-btn t-tab" data-tab="t-settings">⚙️ الإعدادات</button>
+      <button class="logout-btn" onclick="doTeacherLogout()">🚪 خروج</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===== الرئيسية ===== -->
+    <section id="t-home" class="section active">
+      <div class="stats-bar">
+        <div class="stat-box"><div class="num" id="statStudents">0</div><div class="lbl">عدد الطلاب</div></div>
+        <div class="stat-box"><div class="num" id="statUnits">0</div><div class="lbl">أبواب المنهج</div></div>
+        <div class="stat-box"><div class="num" id="statExams">0</div><div class="lbl">الامتحانات</div></div>
+        <div class="stat-box"><div class="num" id="statPendingCorrection">0</div><div class="lbl">بانتظار التصحيح</div></div>
+      </div>
+      <div class="info-box">🔗 شارك رابط هذه الصفحة نفسه مع الطلاب — سيختارون "دخول الطالب" من الشاشة الأولى ويسجلون برقم هاتفهم.</div>
+      <div class="card">
+        <h2>📌 آخر النشاطات</h2>
+        <div id="homeFeed"></div>
+      </div>
+    </section>
+
+    <!-- ===== المراحل (اختيار مرحلة لإدارتها) ===== -->
+    <section id="t-stages" class="section">
+      <div id="teacherStageChooser" class="card">
+        <h2>📚 اختر المرحلة لإدارة محتواها</h2>
+        <div class="stage-grid" id="teacherStageGrid"></div>
+      </div>
+
+      <!-- قائمة فرعية داخل المرحلة (تظهر بعد الاختيار) -->
+      <div id="teacherStageDetail" class="hidden">
+        <div class="breadcrumb">
+          <button onclick="teacherBackToStages()">📚 المراحل</button>
+          <span>/</span>
+          <span id="teacherCurrentStageName"></span>
+        </div>
+
+        <div class="stage-menu-grid" style="margin-bottom:20px;">
+          <div class="stage-menu-item" onclick="teacherShowStageSection('curriculum')"><div class="icon">📘</div><div class="name">المنهج</div></div>
+          <div class="stage-menu-item" onclick="teacherShowStageSection('homework')"><div class="icon">📝</div><div class="name">الواجبات</div></div>
+          <div class="stage-menu-item" onclick="teacherShowStageSection('revision')"><div class="icon">🔁</div><div class="name">المراجعة النهائية</div></div>
+          <div class="stage-menu-item" onclick="teacherShowStageSection('examsList')"><div class="icon">🏆</div><div class="name">الامتحانات</div></div>
+        </div>
+
+        <!-- قسم المنهج -->
+        <div id="teacherSection-curriculum" class="stage-sub-section hidden">
+          <div class="card">
+            <h2>➕ إضافة باب جديد للمنهج</h2>
+            <div class="form-grid">
+              <div><label>التصنيف (الأدب / النحو / التعبير / القصة...)</label><input type="text" id="unitCategory" placeholder="مثال: النحو"></div>
+              <div><label>عنوان الباب</label><input type="text" id="unitTitle" placeholder="مثال: الجملة الاسمية"></div>
+              <div><label>رابط ملف PDF</label><input type="url" id="unitPdf" placeholder="https://..."></div>
+            </div>
+            <div class="form-grid"><div style="grid-column:1/-1;"><label>ملاحظات</label><textarea id="unitNotes"></textarea></div></div>
+            <button class="btn small-wide" id="addUnitBtn" onclick="addUnit()">➕ إضافة الباب</button>
+          </div>
+          <div class="card">
+            <h2>📘 محتوى المنهج الحالي</h2>
+            <div id="unitsContainer"></div>
+            <div id="unitsEmpty" class="empty-msg">لا توجد أبواب مضافة بعد</div>
+          </div>
+        </div>
+
+        <!-- قسم الواجبات -->
+        <div id="teacherSection-homework" class="stage-sub-section hidden">
+          <div class="card">
+            <h2>➕ إضافة واجب جديد</h2>
+            <div class="form-grid">
+              <div><label>عنوان الواجب</label><input type="text" id="hwTitle"></div>
+              <div><label>موعد التسليم</label><input type="date" id="hwDue"></div>
+              <div><label>الحالة</label><select id="hwStatus"><option value="جديد">جديد</option><option value="قيد التنفيذ">قيد التنفيذ</option><option value="منتهي">منتهي</option></select></div>
+            </div>
+            <div class="form-grid"><div style="grid-column:1/-1;"><label>التفاصيل</label><textarea id="hwDetails"></textarea></div></div>
+            <button class="btn small-wide" id="addHwBtn" onclick="addHomework()">➕ إضافة الواجب</button>
+          </div>
+          <div class="card">
+            <h2>📝 قائمة الواجبات</h2>
+            <table><thead><tr><th>#</th><th>العنوان</th><th>التفاصيل</th><th>التسليم</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="hwBody"></tbody></table>
+            <div id="hwEmpty" class="empty-msg">لا توجد واجبات مضافة بعد</div>
+          </div>
+        </div>
+
+        <!-- قسم المراجعة النهائية -->
+        <div id="teacherSection-revision" class="stage-sub-section hidden">
+          <div class="card">
+            <h2>➕ إضافة مراجعة نهائية</h2>
+            <div class="form-grid">
+              <div><label>عنوان المراجعة</label><input type="text" id="revTitle"></div>
+              <div><label>الموعد</label><input type="date" id="revDate"></div>
+            </div>
+            <div class="form-grid"><div style="grid-column:1/-1;"><label>الملخص الكامل</label><textarea id="revSummary" style="min-height:100px;"></textarea></div></div>
+            <button class="btn small-wide" id="addRevBtn" onclick="addRevision()">➕ إضافة المراجعة</button>
+          </div>
+          <div class="card">
+            <h2>🔁 المراجعات الحالية</h2>
+            <table><thead><tr><th>#</th><th>العنوان</th><th>الملخص</th><th>الموعد</th><th>إجراءات</th></tr></thead><tbody id="revBody"></tbody></table>
+            <div id="revEmpty" class="empty-msg">لا توجد مراجعات مضافة بعد</div>
+          </div>
+        </div>
+
+        <!-- قسم الامتحانات -->
+        <div id="teacherSection-examsList" class="stage-sub-section hidden">
+          <div id="examListView">
+            <div class="card">
+              <h2>➕ إنشاء امتحان جديد</h2>
+              <div class="form-grid">
+                <div><label>اسم الامتحان</label><input type="text" id="examTitle" placeholder="مثال: امتحان الشهر الأول"></div>
+                <div><label>نوع الامتحان</label><select id="examType"><option value="حصة">امتحان حصة</option><option value="شهري">امتحان شهري</option></select></div>
+                <div><label>مدة الامتحان (بالدقائق)</label><input type="number" id="examDuration" value="30"></div>
+              </div>
+              <button class="btn small-wide" id="addExamBtn" onclick="addExam()">➕ إنشاء الامتحان</button>
+            </div>
+            <div class="card">
+              <h2>🏆 الامتحانات الحالية</h2>
+              <div id="examsContainer"></div>
+              <div id="examsEmpty" class="empty-msg">لا توجد امتحانات مضافة بعد</div>
+            </div>
+          </div>
+
+          <!-- تفاصيل امتحان معين (إدارة الأسئلة والنتائج) -->
+          <div id="examDetailView" class="hidden">
+            <div class="breadcrumb">
+              <button onclick="teacherBackToExamsList()">🏆 الامتحانات</button>
+              <span>/</span>
+              <span id="examDetailTitle"></span>
+            </div>
+            <div class="card">
+              <h2>⚙️ إعدادات الامتحان</h2>
+              <div class="form-grid">
+                <div><label>حالة الامتحان</label>
+                  <select id="examActiveToggle" onchange="toggleExamActive()">
+                    <option value="true">مفعّل (يقدر الطلاب يدخلوه)</option>
+                    <option value="false">موقوف مؤقتاً</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn danger small-wide" onclick="deleteExamFull()">🗑 حذف الامتحان نهائياً</button>
+            </div>
+
+            <div class="card">
+              <h2>➕ إضافة سؤال</h2>
+              <div class="form-grid">
+                <div><label>نوع السؤال</label>
+                  <select id="qType" onchange="onQTypeChange()">
+                    <option value="mcq">اختياري (4 اختيارات)</option>
+                    <option value="truefalse">صح / خطأ</option>
+                    <option value="essay">مقالي (بالكتابة)</option>
+                  </select>
+                </div>
+                <div><label>الدرجة</label><input type="number" id="qPoints" value="1"></div>
+              </div>
+              <div class="form-grid"><div style="grid-column:1/-1;"><label>نص السؤال</label><textarea id="qText"></textarea></div></div>
+
+              <div id="mcqFields">
+                <div class="form-grid">
+                  <div><label>اختيار أ</label><input type="text" id="qOptA"></div>
+                  <div><label>اختيار ب</label><input type="text" id="qOptB"></div>
+                  <div><label>اختيار ج</label><input type="text" id="qOptC"></div>
+                  <div><label>اختيار د</label><input type="text" id="qOptD"></div>
+                </div>
+                <div class="form-grid">
+                  <div><label>الإجابة الصحيحة (مخفية عن الطالب)</label>
+                    <select id="qCorrectMcq"><option value="a">أ</option><option value="b">ب</option><option value="c">ج</option><option value="d">د</option></select>
+                  </div>
+                </div>
+              </div>
+
+              <div id="tfFields" class="hidden">
+                <div class="form-grid">
+                  <div><label>الإجابة الصحيحة (مخفية عن الطالب)</label>
+                    <select id="qCorrectTf"><option value="true">صح</option><option value="false">خطأ</option></select>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn small-wide" id="addQBtn" onclick="addQuestion()">➕ إضافة السؤال</button>
+            </div>
+
+            <div class="card">
+              <h2>📋 أسئلة الامتحان الحالية</h2>
+              <div id="questionsContainer"></div>
+              <div id="questionsEmpty" class="empty-msg">لا توجد أسئلة مضافة بعد</div>
+            </div>
+
+            <div class="card">
+              <h2>📊 نتائج الطلاب في هذا الامتحان</h2>
+              <table><thead><tr><th>#</th><th>الطالب</th><th>الحالة</th><th>الدرجة</th><th>إجراءات</th></tr></thead><tbody id="examResultsBody"></tbody></table>
+              <div id="examResultsEmpty" class="empty-msg">لا توجد محاولات بعد</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== الطلاب (كل الطلاب في كل المراحل) ===== -->
+    <section id="t-students" class="section">
+      <div class="card">
+        <h2>👨‍🎓 كل الطلاب المسجلين</h2>
+        <div class="form-grid">
+          <div><label>فلترة حسب المرحلة</label>
+            <select id="studentsFilterStage" onchange="loadAllStudents()"><option value="">كل المراحل</option></select>
+          </div>
+        </div>
+        <table><thead><tr><th>#</th><th>الاسم</th><th>رقم الهاتف</th><th>المرحلة</th><th>إجراءات</th></tr></thead><tbody id="allStudentsBody"></tbody></table>
+        <div id="allStudentsEmpty" class="empty-msg">لا يوجد طلاب مسجلين بعد</div>
+      </div>
+    </section>
+
+    <!-- ===== تصحيح المقالي ===== -->
+    <section id="t-correction" class="section">
+      <div class="card">
+        <h2>✍️ محاولات بانتظار تصحيح المقالي</h2>
+        <div id="correctionListContainer"></div>
+        <div id="correctionListEmpty" class="empty-msg">لا توجد محاولات بانتظار التصحيح حالياً</div>
+      </div>
+      <div id="correctionDetailView" class="hidden">
+        <div class="breadcrumb"><button onclick="backToCorrectionList()">✍️ قائمة التصحيح</button><span>/</span><span id="correctionDetailTitle"></span></div>
+        <div class="card">
+          <h2 id="correctionStudentName"></h2>
+          <div id="correctionQuestionsContainer"></div>
+          <button class="btn success small-wide" onclick="saveCorrectionScores()">💾 حفظ الدرجات وإنهاء التصحيح</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== الإعدادات ===== -->
+    <section id="t-settings" class="section">
+      <div class="card">
+        <h2>⚙️ إعدادات المنصة</h2>
+        <div class="form-grid">
+          <div><label>الوصف / الشعار النصي أسفل الاسم</label><input type="text" id="subtitleInput" placeholder="مثال: منصة تعليم اللغة العربية"></div>
+          <div><label>رقم هاتف المستر (يظهر للطلاب للتواصل)</label><input type="tel" id="teacherPhoneInput" dir="ltr" placeholder="01xxxxxxxxx"></div>
+        </div>
+        <button class="btn small-wide" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+      </div>
+    </section>
+  </main>
+  <footer>© جميع الحقوق محفوظة — منصة تعليم اللغة العربية</footer>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- تطبيق الطالب -->
+<!-- ============================================================ -->
+<div id="studentApp" class="hidden">
+  <header>
+    <img class="avatar" id="studentHeaderPhoto" src="" alt="">
+    <div class="brand-text">
+      <h1 id="studentHeaderName">منصة تعليم اللغة العربية</h1>
+      <p id="studentHeaderSubtitle"></p>
+    </div>
+    <div id="studentWelcome"></div>
+    <button class="logout-btn" onclick="doStudentLogout()">🚪 خروج</button>
+  </header>
+
+  <main>
+    <!-- ===== شاشة اختيار المرحلة (للطالب) ===== -->
+    <div id="studentStageChooser" class="card hidden">
+      <h2>📚 مرحلتك الدراسية</h2>
+      <div id="studentStageInfo" class="info-box"></div>
+    </div>
+
+    <!-- ===== القائمة الرئيسية لمرحلة الطالب ===== -->
+    <div id="studentStageMenu" class="hidden">
+      <div class="stage-menu-grid">
+        <div class="stage-menu-item" onclick="studentShowSection('s-curriculum')"><div class="icon">📘</div><div class="name">المنهج</div></div>
+        <div class="stage-menu-item" onclick="studentShowSection('s-homework')"><div class="icon">📝</div><div class="name">الواجبات</div></div>
+        <div class="stage-menu-item" onclick="studentShowSection('s-revision')"><div class="icon">🔁</div><div class="name">المراجعة النهائية</div></div>
+        <div class="stage-menu-item" onclick="studentShowSection('s-exams')"><div class="icon">🏆</div><div class="name">الامتحانات</div></div>
+        <div class="stage-menu-item" onclick="studentShowSection('s-grades')"><div class="icon">📊</div><div class="name">درجاتي</div></div>
+      </div>
+
+      <div class="breadcrumb hidden" id="studentSectionBreadcrumb" style="margin-top:16px;">
+        <button onclick="studentBackToMenu()">📚 القائمة الرئيسية</button>
+      </div>
+
+      <!-- المنهج -->
+      <div id="s-curriculum" class="student-section hidden">
+        <div class="card"><h2>📘 المنهج الدراسي</h2><div id="sCurriculumContainer"></div><div id="sCurriculumEmpty" class="empty-msg">لا يوجد محتوى بعد</div></div>
+      </div>
+      <!-- الواجبات -->
+      <div id="s-homework" class="student-section hidden">
+        <div class="card">
+          <h2>📝 الواجبات</h2>
+          <table><thead><tr><th>#</th><th>العنوان</th><th>التفاصيل</th><th>التسليم</th><th>الحالة</th></tr></thead><tbody id="sHwBody"></tbody></table>
+          <div id="sHwEmpty" class="empty-msg">لا توجد واجبات حالياً</div>
+        </div>
+      </div>
+      <!-- المراجعة -->
+      <div id="s-revision" class="student-section hidden">
+        <div class="card">
+          <h2>🔁 المراجعة النهائية</h2>
+          <table><thead><tr><th>#</th><th>العنوان</th><th>الملخص</th><th>الموعد</th></tr></thead><tbody id="sRevBody"></tbody></table>
+          <div id="sRevEmpty" class="empty-msg">لا توجد مراجعات حالياً</div>
+        </div>
+      </div>
+      <!-- الامتحانات -->
+      <div id="s-exams" class="student-section hidden">
+        <div class="card"><h2>🏆 الامتحانات المتاحة</h2><div id="sExamsContainer"></div><div id="sExamsEmpty" class="empty-msg">لا توجد امتحانات متاحة حالياً</div></div>
+      </div>
+      <!-- الدرجات -->
+      <div id="s-grades" class="student-section hidden">
+        <div class="card"><h2>📊 درجاتي</h2><div id="sGradesContainer"></div><div id="sGradesEmpty" class="empty-msg">لا توجد درجات مرصودة بعد</div></div>
+      </div>
+    </div>
+  </main>
+  <footer>© جميع الحقوق محفوظة — منصة تعليم اللغة العربية</footer>
+</div>
+
+<!-- ============================================================ -->
+<!-- شاشة أداء الامتحان (منفصلة تماماً - ملء الشاشة) -->
+<!-- ============================================================ -->
+<div id="examTakingScreen" class="hidden">
+  <div class="exam-header-bar">
+    <div>
+      <div style="font-weight:700; font-size:15px;" id="examTakingTitle"></div>
+      <div style="font-size:12px; color:var(--muted);" id="examTakingSubtitle"></div>
+    </div>
+    <div class="exam-timer" id="examTimerDisplay">--:--</div>
+  </div>
+
+  <div id="violationBannerContainer"></div>
+
+  <div id="examQuestionsContainer"></div>
+
+  <div class="card">
+    <button class="btn success" onclick="submitExam()">✅ تسليم الامتحان</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- شاشة الامتحان المقفول نهائياً -->
+<!-- ============================================================ -->
+<div id="examLockedScreen" class="hidden">
+  <div style="max-width:500px; margin:60px auto; padding:0 20px;">
+    <div class="locked-banner">
+      <div class="icon">🔒</div>
+      <h2>تم قفل الامتحان</h2>
+      <p>لقد خرجت من صفحة الامتحان أكثر من مرة، لذلك تم قفل المحاولة نهائياً.<br>يرجى التواصل مع المستر لإعادة فتح الامتحان لك.</p>
+      <button class="btn secondary" style="margin-top:16px; width:auto;" onclick="showScreen('studentApp'); studentBackToMenu();">العودة للقائمة الرئيسية</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================
+   ⚠️ إعدادات الاتصال بقاعدة البيانات
+   ========================================================== */
+const SUPABASE_URL = "https://lqefsjuhyqhqmjnjywmn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZWZzanVoeXFocW1qbmp5d21uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MTYxNjYsImV4cCI6MjEwNDI5MjE2Nn0.3AErjoWg5368gDqVi8kiusjX5-dIqXbD_SDURAi06xE";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ========================================================== 
+   أدوات مساعدة عامة
+   ========================================================== */
+function escapeHtml(str){
+  if(str===undefined||str===null) return '';
+  return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+}
+function toast(msg, isError=false){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError?' error':'');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+function defaultAvatar(){
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90"><rect width="100%" height="100%" fill="#eef2ff" rx="45"/><text x="50%" y="55%" font-size="38" text-anchor="middle" fill="#4f46e5" font-family="Arial" dy=".1em">👨‍🏫</text></svg>`);
+}
+function setBtnLoading(btn, loading, originalText){
+  btn.disabled = loading;
+  btn.textContent = loading ? '⏳ جارِ الحفظ...' : originalText;
+}
+function showScreen(id){
+  const allScreens = ['gateScreen','teacherLoginScreen','studentLoginScreen','teacherApp','studentApp','examTakingScreen','examLockedScreen'];
+  allScreens.forEach(x=> document.getElementById(x).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+/* ==========================================================
+   تحميل بيانات المنصة العامة (تظهر حتى قبل تسجيل الدخول)
+   ========================================================== */
+let platformProfile = null;
+async function loadGateProfile(){
+  const { data } = await sb.from('teacher_profile').select('*').limit(1).single();
+  platformProfile = data;
+  const photo = (data && data.photo_url) ? data.photo_url : defaultAvatar();
+  const name = (data && data.name) ? data.name : 'الأستاذ الفاضل';
+  const subtitle = (data && data.subtitle) ? data.subtitle : 'منصة تعليم اللغة العربية';
+
+  document.getElementById('gatePhoto').src = photo;
+  document.getElementById('gatePlatformName').textContent = subtitle;
+  document.getElementById('gateTeacherLine').textContent = `للأستاذ الفاضل ${name}`;
+  document.getElementById('studentLoginPhoto').src = photo;
+  document.getElementById('studentLoginPlatformName').textContent = subtitle;
+}
+
+async function loadStagesIntoSelect(selectId, includeEmpty=true){
+  const { data } = await sb.from('stages').select('*').order('order_num');
+  const sel = document.getElementById(selectId);
+  const currentVal = sel.value;
+  sel.innerHTML = includeEmpty ? '<option value="">اختر المرحلة</option>' : '';
+  (data||[]).forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  if(currentVal) sel.value = currentVal;
+  return data || [];
+}
+
+/* ==========================================================
+   ======================  دخول المستر  ========================
+   ========================================================== */
+async function doTeacherLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('teacherLoginError');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent='يرجى إدخال البريد وكلمة السر'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){ errEl.textContent = 'بيانات الدخول غير صحيحة'; return; }
+  showScreen('teacherApp');
+  initTeacherApp();
+}
+async function doTeacherLogout(){ await sb.auth.signOut(); location.reload(); }
+async function checkTeacherSession(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ showScreen('teacherApp'); await initTeacherApp(); return true; }
+  return false;
+}
+
+document.querySelectorAll('.t-tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.t-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#teacherApp > main > .section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 't-students') loadAllStudents();
+    if(btn.dataset.tab === 't-correction') loadCorrectionList();
+  });
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   ملف البروفايل والإعدادات
+   ========================================================== */
+let profileId = null;
+
+async function loadProfile(){
+  const { data, error } = await sb.from('teacher_profile').select('*').limit(1).single();
+  if(error || !data){ toast('تعذر تحميل بيانات البروفايل', true); return; }
+  profileId = data.id;
+  document.getElementById('teacherName').value = data.name || '';
+  document.getElementById('teacherSubtitleDisplay').textContent = data.subtitle || '';
+  document.getElementById('subtitleInput').value = data.subtitle || '';
+  document.getElementById('teacherPhoneInput').value = data.phone || '';
+  document.getElementById('teacherPhoto').src = data.photo_url || defaultAvatar();
+}
+
+document.getElementById('teacherName').addEventListener('change', async (e)=>{
+  const { error } = await sb.from('teacher_profile').update({ name: e.target.value.trim() }).eq('id', profileId);
+  toast(error ? 'فشل حفظ الاسم' : 'تم حفظ الاسم', !!error);
+});
+
+document.getElementById('photoInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const fileName = `teacher-photo-${Date.now()}.${file.name.split('.').pop()}`;
+  const { error: uploadErr } = await sb.storage.from('public-media').upload(fileName, file, { upsert:true });
+  if(uploadErr){ toast('فشل رفع الصورة: ' + uploadErr.message, true); return; }
+  const { data: urlData } = sb.storage.from('public-media').getPublicUrl(fileName);
+  const photoUrl = urlData.publicUrl;
+  const { error } = await sb.from('teacher_profile').update({ photo_url: photoUrl }).eq('id', profileId);
+  if(error){ toast('فشل حفظ رابط الصورة', true); return; }
+  document.getElementById('teacherPhoto').src = photoUrl;
+  toast('تم تحديث الصورة بنجاح');
+});
+
+async function saveSettings(){
+  const subtitle = document.getElementById('subtitleInput').value.trim();
+  const phone = document.getElementById('teacherPhoneInput').value.trim();
+  const { error } = await sb.from('teacher_profile').update({ subtitle, phone }).eq('id', profileId);
+  if(error){ toast('فشل الحفظ', true); return; }
+  document.getElementById('teacherSubtitleDisplay').textContent = subtitle;
+  toast('تم حفظ الإعدادات');
+}
+
+/* ==========================================================
+   اختيار المرحلة (لوحة المستر)
+   ========================================================== */
+let currentTeacherStageId = null;
+let currentTeacherStageName = '';
+const STAGE_ICONS = {1:'1️⃣', 2:'2️⃣', 3:'3️⃣'};
+
+async function loadTeacherStageGrid(){
+  const stages = await loadStagesIntoSelect('studentsFilterStage', true);
+  const grid = document.getElementById('teacherStageGrid');
+  grid.innerHTML = '';
+  stages.forEach(s=>{
+    const div = document.createElement('div');
+    div.className = 'stage-card';
+    div.onclick = ()=> teacherOpenStage(s.id, s.name);
+    div.innerHTML = `<div class="icon">${STAGE_ICONS[s.order_num]||'📚'}</div><div class="name">${escapeHtml(s.name)}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function teacherOpenStage(stageId, stageName){
+  currentTeacherStageId = stageId;
+  currentTeacherStageName = stageName;
+  document.getElementById('teacherStageChooser').classList.add('hidden');
+  document.getElementById('teacherStageDetail').classList.remove('hidden');
+  document.getElementById('teacherCurrentStageName').textContent = stageName;
+  document.querySelectorAll('.stage-sub-section').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('examListView').classList.remove('hidden');
+  document.getElementById('examDetailView').classList.add('hidden');
+  teacherShowStageSection('curriculum');
+}
+
+function teacherBackToStages(){
+  document.getElementById('teacherStageChooser').classList.remove('hidden');
+  document.getElementById('teacherStageDetail').classList.add('hidden');
+  currentTeacherStageId = null;
+}
+
+function teacherShowStageSection(section){
+  document.querySelectorAll('.stage-sub-section').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('teacherSection-'+section).classList.remove('hidden');
+  if(section==='curriculum') loadUnits();
+  if(section==='homework') loadHomework();
+  if(section==='revision') loadRevisions();
+  if(section==='examsList') loadExamsList();
+}
+
+/* ==========================================================
+   المنهج (curriculum_units)
+   ========================================================== */
+async function loadUnits(){
+  const { data, error } = await sb.from('curriculum_units').select('*').eq('stage_id', currentTeacherStageId).order('created_at', {ascending:true});
+  if(error){ toast('فشل تحميل المنهج', true); return; }
+  renderUnits(data || []);
+}
+async function addUnit(){
+  const btn = document.getElementById('addUnitBtn');
+  const category = document.getElementById('unitCategory').value.trim();
+  const title = document.getElementById('unitTitle').value.trim();
+  if(!category || !title){ toast('يرجى إدخال التصنيف والعنوان', true); return; }
+  const payload = {
+    stage_id: currentTeacherStageId, category, title,
+    pdf_url: document.getElementById('unitPdf').value.trim()||null,
+    notes: document.getElementById('unitNotes').value.trim()||null
+  };
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('curriculum_units').insert(payload);
+  setBtnLoading(btn, false, '➕ إضافة الباب');
+  if(error){ toast('فشل إضافة الباب', true); return; }
+  document.getElementById('unitCategory').value=''; document.getElementById('unitTitle').value='';
+  document.getElementById('unitPdf').value=''; document.getElementById('unitNotes').value='';
+  toast('تمت إضافة الباب'); loadUnits(); loadHomeFeed();
+}
+async function deleteUnit(id){
+  if(!confirm('حذف هذا الباب؟')) return;
+  const { error } = await sb.from('curriculum_units').delete().eq('id', id);
+  toast(error?'فشل الحذف':'تم الحذف', !!error); loadUnits();
+}
+async function editUnit(id, oldCat, oldTitle, oldPdf, oldNotes){
+  const newCat = prompt('التصنيف:', oldCat); if(newCat===null) return;
+  const newTitle = prompt('العنوان:', oldTitle); if(newTitle===null) return;
+  const newPdf = prompt('رابط PDF:', oldPdf||'');
+  const newNotes = prompt('ملاحظات:', oldNotes||'');
+  const { error } = await sb.from('curriculum_units').update({ category:newCat.trim()||oldCat, title:newTitle.trim()||oldTitle, pdf_url:newPdf||null, notes:newNotes||null }).eq('id', id);
+  toast(error?'فشل التعديل':'تم التعديل', !!error); loadUnits();
+}
+function renderUnits(list){
+  const container = document.getElementById('unitsContainer');
+  container.innerHTML = '';
+  document.getElementById('unitsEmpty').style.display = list.length?'none':'block';
+  // تجميع حسب التصنيف
+  const groups = {};
+  list.forEach(u=>{
+    if(!groups[u.category]) groups[u.category] = [];
+    groups[u.category].push(u);
+  });
+  Object.keys(groups).forEach(cat=>{
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'category-group';
+    let itemsHtml = '';
+    groups[cat].forEach(u=>{
+      itemsHtml += `<div class="unit-item">
+        <div>
+          <div class="unit-title">${escapeHtml(u.title)}</div>
+          ${u.notes ? `<div class="unit-notes">${escapeHtml(u.notes)}</div>` : ''}
+        </div>
+        <div class="row-actions">
+          ${u.pdf_url ? `<a class="btn small secondary" href="${escapeHtml(u.pdf_url)}" target="_blank">📄 الملف</a>` : ''}
+          <button class="btn small secondary" onclick='editUnit("${u.id}", ${JSON.stringify(u.category)}, ${JSON.stringify(u.title)}, ${JSON.stringify(u.pdf_url)}, ${JSON.stringify(u.notes)})'>✏️</button>
+          <button class="btn small danger" onclick="deleteUnit('${u.id}')">🗑</button>
+        </div>
+      </div>`;
+    });
+    groupDiv.innerHTML = `<div class="category-title">📖 ${escapeHtml(cat)}</div>${itemsHtml}`;
+    container.appendChild(groupDiv);
+  });
+  document.getElementById('statUnits').textContent = list.length;
+}
+
+/* ==========================================================
+   الواجبات (assignments)
+   ========================================================== */
+async function loadHomework(){
+  const { data, error } = await sb.from('assignments').select('*').eq('stage_id', currentTeacherStageId).order('created_at', {ascending:false});
+  if(error){ toast('فشل تحميل الواجبات', true); return; }
+  renderHomework(data || []);
+}
+async function addHomework(){
+  const btn = document.getElementById('addHwBtn');
+  const title = document.getElementById('hwTitle').value.trim();
+  if(!title){ toast('يرجى إدخال عنوان الواجب', true); return; }
+  const payload = {
+    stage_id: currentTeacherStageId, title,
+    details: document.getElementById('hwDetails').value.trim()||null,
+    due_date: document.getElementById('hwDue').value||null,
+    status: document.getElementById('hwStatus').value
+  };
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('assignments').insert(payload);
+  setBtnLoading(btn, false, '➕ إضافة الواجب');
+  if(error){ toast('فشل إضافة الواجب', true); return; }
+  document.getElementById('hwTitle').value=''; document.getElementById('hwDue').value=''; document.getElementById('hwDetails').value='';
+  toast('تمت إضافة الواجب'); loadHomework(); loadHomeFeed();
+}
+async function deleteHomework(id){
+  if(!confirm('حذف هذا الواجب؟')) return;
+  const { error } = await sb.from('assignments').delete().eq('id', id);
+  toast(error?'فشل الحذف':'تم الحذف', !!error); loadHomework();
+}
+async function editHomework(id, oldTitle, oldDetails, oldDue, oldStatus){
+  const newTitle = prompt('عنوان الواجب:', oldTitle); if(newTitle===null) return;
+  const newDetails = prompt('التفاصيل:', oldDetails||'');
+  const newDue = prompt('موعد التسليم (YYYY-MM-DD):', oldDue||'');
+  const newStatus = prompt('الحالة (جديد / قيد التنفيذ / منتهي):', oldStatus||'جديد');
+  const { error } = await sb.from('assignments').update({ title:newTitle.trim()||oldTitle, details:newDetails||null, due_date:newDue||null, status:newStatus||oldStatus }).eq('id', id);
+  toast(error?'فشل التعديل':'تم التعديل', !!error); loadHomework();
+}
+function hwStatusColor(status){
+  if(status==='منتهي') return 'green';
+  if(status==='قيد التنفيذ') return 'orange';
+  return '';
+}
+function renderHomework(list){
+  const tbody = document.getElementById('hwBody');
+  tbody.innerHTML = '';
+  document.getElementById('hwEmpty').style.display = list.length?'none':'block';
+  list.forEach((h,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(h.title)}</td><td>${escapeHtml(h.details||'-')}</td><td>${h.due_date||'-'}</td>
+      <td><span class="tag ${hwStatusColor(h.status)}">${escapeHtml(h.status)}</span></td>
+      <td class="row-actions">
+        <button class="btn small secondary" onclick='editHomework("${h.id}", ${JSON.stringify(h.title)}, ${JSON.stringify(h.details)}, ${JSON.stringify(h.due_date)}, ${JSON.stringify(h.status)})'>✏️</button>
+        <button class="btn small danger" onclick="deleteHomework('${h.id}')">🗑</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ==========================================================
+   المراجعة النهائية (revisions)
+   ========================================================== */
+async function loadRevisions(){
+  const { data, error } = await sb.from('revisions').select('*').eq('stage_id', currentTeacherStageId).order('created_at', {ascending:false});
+  if(error){ toast('فشل تحميل المراجعات', true); return; }
+  renderRevisionsTeacher(data || []);
+}
+async function addRevision(){
+  const btn = document.getElementById('addRevBtn');
+  const title = document.getElementById('revTitle').value.trim();
+  if(!title){ toast('يرجى إدخال عنوان المراجعة', true); return; }
+  const payload = { stage_id: currentTeacherStageId, title, summary: document.getElementById('revSummary').value.trim()||null, rev_date: document.getElementById('revDate').value||null };
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('revisions').insert(payload);
+  setBtnLoading(btn, false, '➕ إضافة المراجعة');
+  if(error){ toast('فشل إضافة المراجعة', true); return; }
+  document.getElementById('revTitle').value=''; document.getElementById('revDate').value=''; document.getElementById('revSummary').value='';
+  toast('تمت إضافة المراجعة'); loadRevisions(); loadHomeFeed();
+}
+async function deleteRevision(id){
+  if(!confirm('حذف هذه المراجعة؟')) return;
+  const { error } = await sb.from('revisions').delete().eq('id', id);
+  toast(error?'فشل الحذف':'تم الحذف', !!error); loadRevisions();
+}
+async function editRevision(id, oldTitle, oldSummary, oldDate){
+  const newTitle = prompt('عنوان المراجعة:', oldTitle); if(newTitle===null) return;
+  const newSummary = prompt('الملخص:', oldSummary||'');
+  const newDate = prompt('الموعد:', oldDate||'');
+  const { error } = await sb.from('revisions').update({ title:newTitle.trim()||oldTitle, summary:newSummary||null, rev_date:newDate||null }).eq('id', id);
+  toast(error?'فشل التعديل':'تم التعديل', !!error); loadRevisions();
+}
+function renderRevisionsTeacher(list){
+  const tbody = document.getElementById('revBody');
+  tbody.innerHTML = '';
+  document.getElementById('revEmpty').style.display = list.length?'none':'block';
+  list.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(r.title)}</td><td>${escapeHtml(r.summary||'-')}</td><td>${r.rev_date||'-'}</td>
+      <td class="row-actions">
+        <button class="btn small secondary" onclick='editRevision("${r.id}", ${JSON.stringify(r.title)}, ${JSON.stringify(r.summary)}, ${JSON.stringify(r.rev_date)})'>✏️</button>
+        <button class="btn small danger" onclick="deleteRevision('${r.id}')">🗑</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+</script>
+
+
+<script>
+/* ==========================================================
+   إدارة الامتحانات (لوحة المستر)
+   ========================================================== */
+let allExamsCache = [];
+let currentExamId = null;
+let currentExamTitle = '';
+
+async function loadExamsList(){
+  const { data, error } = await sb.from('exams').select('*').eq('stage_id', currentTeacherStageId).order('created_at', {ascending:false});
+  if(error){ toast('فشل تحميل الامتحانات', true); return; }
+  allExamsCache = data || [];
+  renderExamsList();
+  // إحصائية عامة لكل الامتحانات في كل المراحل
+  const { count } = await sb.from('exams').select('*', { count:'exact', head:true });
+  document.getElementById('statExams').textContent = count || 0;
+}
+async function addExam(){
+  const btn = document.getElementById('addExamBtn');
+  const title = document.getElementById('examTitle').value.trim();
+  if(!title){ toast('يرجى إدخال اسم الامتحان', true); return; }
+  const payload = {
+    stage_id: currentTeacherStageId, title,
+    exam_type: document.getElementById('examType').value,
+    duration_minutes: parseInt(document.getElementById('examDuration').value)||30,
+    is_active: true
+  };
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('exams').insert(payload);
+  setBtnLoading(btn, false, '➕ إنشاء الامتحان');
+  if(error){ toast('فشل إنشاء الامتحان', true); return; }
+  document.getElementById('examTitle').value=''; document.getElementById('examDuration').value='30';
+  toast('تم إنشاء الامتحان'); loadExamsList(); loadHomeFeed();
+}
+function renderExamsList(){
+  const container = document.getElementById('examsContainer');
+  container.innerHTML = '';
+  document.getElementById('examsEmpty').style.display = allExamsCache.length?'none':'block';
+  allExamsCache.forEach(ex=>{
+    const div = document.createElement('div');
+    div.className = 'exam-block';
+    div.style.cursor = 'pointer';
+    div.onclick = ()=> teacherOpenExam(ex.id, ex.title);
+    div.innerHTML = `
+      <div class="exam-block-head">
+        <div>
+          <span class="exam-title">🏆 ${escapeHtml(ex.title)}</span>
+          <span class="tag">${escapeHtml(ex.exam_type)}</span>
+          <span class="tag">${ex.duration_minutes} دقيقة</span>
+          <span class="tag ${ex.is_active?'green':'red'}">${ex.is_active?'مفعّل':'موقوف'}</span>
+        </div>
+        <div>إدارة ←</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+async function teacherOpenExam(examId, examTitle){
+  currentExamId = examId;
+  currentExamTitle = examTitle;
+  document.getElementById('examListView').classList.add('hidden');
+  document.getElementById('examDetailView').classList.remove('hidden');
+  document.getElementById('examDetailTitle').textContent = examTitle;
+  const exam = allExamsCache.find(e=>e.id===examId);
+  document.getElementById('examActiveToggle').value = exam ? String(exam.is_active) : 'true';
+  await loadQuestions();
+  await loadExamResults();
+}
+function teacherBackToExamsList(){
+  document.getElementById('examListView').classList.remove('hidden');
+  document.getElementById('examDetailView').classList.add('hidden');
+  currentExamId = null;
+  loadExamsList();
+}
+
+async function toggleExamActive(){
+  const val = document.getElementById('examActiveToggle').value === 'true';
+  const { error } = await sb.from('exams').update({ is_active: val }).eq('id', currentExamId);
+  toast(error?'فشل التحديث':'تم تحديث حالة الامتحان', !!error);
+}
+
+async function deleteExamFull(){
+  if(!confirm('حذف هذا الامتحان بكل أسئلته ونتائجه نهائياً؟')) return;
+  const { error } = await sb.from('exams').delete().eq('id', currentExamId);
+  if(error){ toast('فشل الحذف', true); return; }
+  toast('تم حذف الامتحان'); teacherBackToExamsList(); loadHomeFeed();
+}
+
+/* ---- الأسئلة ---- */
+function onQTypeChange(){
+  const type = document.getElementById('qType').value;
+  document.getElementById('mcqFields').classList.toggle('hidden', type!=='mcq');
+  document.getElementById('tfFields').classList.toggle('hidden', type!=='truefalse');
+}
+
+async function loadQuestions(){
+  const { data, error } = await sb.from('exam_questions').select('*').eq('exam_id', currentExamId).order('order_num', {ascending:true});
+  if(error){ toast('فشل تحميل الأسئلة', true); return; }
+  renderQuestions(data || []);
+}
+
+async function addQuestion(){
+  const btn = document.getElementById('addQBtn');
+  const type = document.getElementById('qType').value;
+  const text = document.getElementById('qText').value.trim();
+  const points = parseFloat(document.getElementById('qPoints').value) || 1;
+  if(!text){ toast('يرجى إدخال نص السؤال', true); return; }
+
+  let payload = { exam_id: currentExamId, question_type: type, question_text: text, points };
+
+  if(type === 'mcq'){
+    const a = document.getElementById('qOptA').value.trim();
+    const b = document.getElementById('qOptB').value.trim();
+    const c = document.getElementById('qOptC').value.trim();
+    const d = document.getElementById('qOptD').value.trim();
+    if(!a || !b || !c || !d){ toast('يرجى ملء كل الاختيارات الأربعة', true); return; }
+    payload.option_a = a; payload.option_b = b; payload.option_c = c; payload.option_d = d;
+    payload.correct_answer = document.getElementById('qCorrectMcq').value;
+  } else if(type === 'truefalse'){
+    payload.correct_answer = document.getElementById('qCorrectTf').value;
+  } else {
+    payload.correct_answer = null; // مقالي - يصححه المستر يدوي
+  }
+
+  // ترتيب السؤال = عدد الأسئلة الحالية
+  const { count } = await sb.from('exam_questions').select('*', { count:'exact', head:true }).eq('exam_id', currentExamId);
+  payload.order_num = count || 0;
+
+  setBtnLoading(btn, true);
+  const { error } = await sb.from('exam_questions').insert(payload);
+  setBtnLoading(btn, false, '➕ إضافة السؤال');
+  if(error){ toast('فشل إضافة السؤال: ' + error.message, true); return; }
+
+  document.getElementById('qText').value='';
+  document.getElementById('qOptA').value=''; document.getElementById('qOptB').value='';
+  document.getElementById('qOptC').value=''; document.getElementById('qOptD').value='';
+  document.getElementById('qPoints').value='1';
+  toast('تمت إضافة السؤال'); loadQuestions();
+}
+
+async function deleteQuestion(id){
+  if(!confirm('حذف هذا السؤال؟')) return;
+  const { error } = await sb.from('exam_questions').delete().eq('id', id);
+  toast(error?'فشل الحذف':'تم الحذف', !!error); loadQuestions();
+}
+
+function qTypeLabel(type){
+  if(type==='mcq') return 'اختياري';
+  if(type==='truefalse') return 'صح/خطأ';
+  return 'مقالي';
+}
+function correctAnswerLabel(q){
+  if(q.question_type==='mcq'){
+    const map = {a:'أ (' + (q.option_a||'') + ')', b:'ب (' + (q.option_b||'') + ')', c:'ج (' + (q.option_c||'') + ')', d:'د (' + (q.option_d||'') + ')'};
+    return map[q.correct_answer] || q.correct_answer;
+  }
+  if(q.question_type==='truefalse') return q.correct_answer==='true' ? 'صح' : 'خطأ';
+  return 'يُصحح يدوياً';
+}
+
+function renderQuestions(list){
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = '';
+  document.getElementById('questionsEmpty').style.display = list.length?'none':'block';
+  list.forEach((q,i)=>{
+    const div = document.createElement('div');
+    div.className = 'correction-item';
+    div.innerHTML = `
+      <div class="correction-q">سؤال ${i+1} — <span class="tag">${qTypeLabel(q.question_type)}</span> <span class="tag">${q.points} درجة</span></div>
+      <div style="margin-bottom:8px;">${escapeHtml(q.question_text)}</div>
+      ${q.question_type==='mcq' ? `<div style="font-size:12.5px; color:var(--muted);">أ) ${escapeHtml(q.option_a)} — ب) ${escapeHtml(q.option_b)} — ج) ${escapeHtml(q.option_c)} — د) ${escapeHtml(q.option_d)}</div>` : ''}
+      <div style="font-size:12.5px; color:var(--success); font-weight:700; margin-top:6px;">✓ الإجابة الصحيحة: ${correctAnswerLabel(q)}</div>
+      <div class="row-actions" style="margin-top:8px;">
+        <button class="btn small danger" onclick="deleteQuestion('${q.id}')">🗑 حذف السؤال</button>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+/* ---- نتائج الطلاب في الامتحان (لوحة المستر) ---- */
+async function loadExamResults(){
+  const { data: attempts, error } = await sb.from('exam_attempts').select('*, students(name, phone)').eq('exam_id', currentExamId).order('started_at', {ascending:false});
+  if(error){ toast('فشل تحميل النتائج', true); return; }
+  renderExamResults(attempts || []);
+}
+
+function attemptStatusLabel(a){
+  if(a.status === 'locked') return '<span class="tag red">مقفول 🔒</span>';
+  if(a.status === 'in_progress') return '<span class="tag orange">جاري الأداء</span>';
+  if(a.status === 'submitted'){
+    // لو فيه أسئلة مقالي لسه مش متصححة
+    return '<span class="tag green">تم التسليم</span>';
+  }
+  return '<span class="tag">-</span>';
+}
+
+async function renderExamResults(attempts){
+  const tbody = document.getElementById('examResultsBody');
+  tbody.innerHTML = '';
+  document.getElementById('examResultsEmpty').style.display = attempts.length?'none':'block';
+  attempts.forEach((a,i)=>{
+    const studentName = a.students ? a.students.name : 'غير معروف';
+    const scoreDisplay = (a.total_score!==null && a.total_score!==undefined) ? a.total_score : (a.status==='submitted' ? 'بانتظار تصحيح المقالي' : '-');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(studentName)}</td><td>${attemptStatusLabel(a)}</td><td>${scoreDisplay}</td>
+      <td class="row-actions">
+        ${a.status==='locked' ? `<button class="btn small success" onclick="reopenAttempt('${a.id}')">🔓 إعادة فتح المحاولة</button>` : ''}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function reopenAttempt(attemptId){
+  if(!confirm('إعادة فتح هذه المحاولة للطالب؟ سيتمكن من إكمال الامتحان من جديد.')) return;
+  const { error } = await sb.from('exam_attempts').update({ status: 'in_progress', violation_count: 0 }).eq('id', attemptId);
+  toast(error?'فشل':'تم إعادة فتح المحاولة، يقدر الطالب يكمل دلوقتي', !!error);
+  loadExamResults();
+}
+</script>
+
+
+<script>
+/* ==========================================================
+   أداء الامتحان (الطالب) - المنطق الأهم والأكثر حساسية
+   ========================================================== */
+let examSession = {
+  examId: null,
+  attemptId: null,
+  exam: null,
+  questions: [],       // بترتيبها الحالي المعروض
+  answers: {},          // questionId -> answer value
+  timerInterval: null,
+  secondsLeft: 0,
+  violationListenerActive: false
+};
+
+/* ---- بدء / استكمال امتحان ---- */
+async function startExam(examId){
+  const exam = studentExamsCache.find(e=>e.id===examId);
+  if(!exam){ toast('تعذر العثور على الامتحان', true); return; }
+  if(!exam.is_active){ toast('هذا الامتحان موقوف مؤقتاً من المستر', true); return; }
+
+  // تحقق هل يوجد محاولة سابقة
+  const { data: existing } = await sb.from('exam_attempts').select('*').eq('exam_id', examId).eq('student_id', currentStudent.id).maybeSingle();
+
+  if(existing && existing.status === 'locked'){
+    showScreen('examLockedScreen');
+    return;
+  }
+  if(existing && existing.status === 'submitted'){
+    toast('لقد قمت بتسليم هذا الامتحان بالفعل', true);
+    return;
+  }
+
+  let attempt = existing;
+  const { data: questions } = await sb.from('exam_questions').select('*').eq('exam_id', examId);
+  if(!questions || questions.length===0){ toast('لا توجد أسئلة في هذا الامتحان بعد', true); return; }
+
+  if(!attempt){
+    // محاولة جديدة: نحفظ ترتيب عشوائي للأسئلة
+    const shuffledIds = shuffleArray(questions.map(q=>q.id));
+    const { data: created, error } = await sb.from('exam_attempts').insert({
+      exam_id: examId, student_id: currentStudent.id, status:'in_progress',
+      violation_count: 0, question_order: shuffledIds
+    }).select().single();
+    if(error){ toast('تعذر بدء الامتحان', true); return; }
+    attempt = created;
+  }
+
+  // ترتيب الأسئلة حسب question_order المحفوظ
+  const orderIds = attempt.question_order || questions.map(q=>q.id);
+  const orderedQuestions = orderIds.map(id=> questions.find(q=>q.id===id)).filter(Boolean);
+
+  // تحميل إجابات سابقة إن وجدت (استكمال بعد انتهاك أول)
+  const { data: prevAnswers } = await sb.from('student_answers').select('*').eq('attempt_id', attempt.id);
+  const answersMap = {};
+  (prevAnswers||[]).forEach(a=> answersMap[a.question_id] = a.answer_text);
+
+  examSession = {
+    examId, attemptId: attempt.id, exam,
+    questions: orderedQuestions, answers: answersMap,
+    timerInterval: null, secondsLeft: 0, violationListenerActive: false
+  };
+
+  // حساب الوقت المتبقي بناءً على وقت البدء الفعلي
+  const startedAt = new Date(attempt.started_at).getTime();
+  const totalSeconds = exam.duration_minutes * 60;
+  const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+  examSession.secondsLeft = Math.max(0, totalSeconds - elapsed);
+
+  if(examSession.secondsLeft <= 0){
+    // الوقت خلص فعلاً - تسليم تلقائي
+    await finalizeSubmit(true);
+    return;
+  }
+
+  renderExamTaking();
+  showScreen('examTakingScreen');
+  startExamTimer();
+  activateAntiCheat();
+}
+
+function shuffleArray(arr){
+  const a = [...arr];
+  for(let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* ---- عرض أسئلة الامتحان ---- */
+function renderExamTaking(){
+  document.getElementById('examTakingTitle').textContent = examSession.exam.title;
+  document.getElementById('examTakingSubtitle').textContent = `${examSession.exam.exam_type} — ${examSession.questions.length} سؤال`;
+  document.getElementById('violationBannerContainer').innerHTML = '';
+
+  const container = document.getElementById('examQuestionsContainer');
+  container.innerHTML = '';
+  examSession.questions.forEach((q, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'question-card';
+    let bodyHtml = '';
+    if(q.question_type === 'mcq'){
+      const opts = [['a',q.option_a],['b',q.option_b],['c',q.option_c],['d',q.option_d]];
+      bodyHtml = opts.map(([val,label])=>{
+        const selected = examSession.answers[q.id] === val;
+        return `<div class="option-row ${selected?'selected':''}" onclick="selectAnswer('${q.id}','${val}', this)">
+          <input type="radio" name="q_${q.id}" ${selected?'checked':''} readonly>
+          <span>${escapeHtml(label)}</span>
+        </div>`;
+      }).join('');
+    } else if(q.question_type === 'truefalse'){
+      const opts = [['true','✅ صح'],['false','❌ خطأ']];
+      bodyHtml = opts.map(([val,label])=>{
+        const selected = examSession.answers[q.id] === val;
+        return `<div class="option-row ${selected?'selected':''}" onclick="selectAnswer('${q.id}','${val}', this)">
+          <input type="radio" name="q_${q.id}" ${selected?'checked':''} readonly>
+          <span>${label}</span>
+        </div>`;
+      }).join('');
+    } else {
+      const val = examSession.answers[q.id] || '';
+      bodyHtml = `<textarea style="min-height:120px;" oninput="selectAnswer('${q.id}', this.value, null)" onpaste="return false;" oncopy="return false;" oncut="return false;">${escapeHtml(val)}</textarea>`;
+    }
+    div.innerHTML = `<div class="question-num">السؤال ${idx+1} من ${examSession.questions.length} — ${q.points} درجة</div>
+      <div class="question-text">${escapeHtml(q.question_text)}</div>
+      <div class="options-container">${bodyHtml}</div>`;
+    container.appendChild(div);
+  });
+}
+
+function selectAnswer(questionId, value, clickedEl){
+  examSession.answers[questionId] = value;
+  // تحديث بصري لأزرار الاختيار
+  if(clickedEl){
+    const parent = clickedEl.parentElement;
+    parent.querySelectorAll('.option-row').forEach(r=>r.classList.remove('selected'));
+    clickedEl.classList.add('selected');
+    const radio = clickedEl.querySelector('input[type=radio]');
+    if(radio) radio.checked = true;
+  }
+  // حفظ فوري في قاعدة البيانات (upsert)
+  saveAnswerToDb(questionId, value);
+}
+
+let saveAnswerTimeout = {};
+function saveAnswerToDb(questionId, value){
+  // debounce بسيط لتقليل الطلبات مع الكتابة السريعة في المقالي
+  clearTimeout(saveAnswerTimeout[questionId]);
+  saveAnswerTimeout[questionId] = setTimeout(async ()=>{
+    await sb.from('student_answers').upsert({
+      attempt_id: examSession.attemptId, question_id: questionId, answer_text: value
+    }, { onConflict: 'attempt_id,question_id' });
+  }, 500);
+}
+
+/* ---- التايمر ---- */
+function startExamTimer(){
+  updateTimerDisplay();
+  examSession.timerInterval = setInterval(()=>{
+    examSession.secondsLeft--;
+    updateTimerDisplay();
+    if(examSession.secondsLeft <= 0){
+      clearInterval(examSession.timerInterval);
+      toast('انتهى الوقت! جارِ تسليم الامتحان تلقائياً', true);
+      finalizeSubmit(true);
+    }
+  }, 1000);
+}
+function updateTimerDisplay(){
+  const m = Math.floor(examSession.secondsLeft/60);
+  const s = examSession.secondsLeft%60;
+  const el = document.getElementById('examTimerDisplay');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.className = 'exam-timer ' + (examSession.secondsLeft<60 ? 'warn' : examSession.secondsLeft<300 ? 'warn' : 'safe');
+}
+
+/* ---- منع الغش: منع النسخ + رصد الخروج من الصفحة ---- */
+function activateAntiCheat(){
+  document.addEventListener('copy', preventCopy);
+  document.addEventListener('cut', preventCopy);
+  document.addEventListener('contextmenu', preventContextMenu);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('blur', handleWindowBlur);
+  examSession.violationListenerActive = true;
+}
+function deactivateAntiCheat(){
+  document.removeEventListener('copy', preventCopy);
+  document.removeEventListener('cut', preventCopy);
+  document.removeEventListener('contextmenu', preventContextMenu);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('blur', handleWindowBlur);
+  examSession.violationListenerActive = false;
+}
+function preventCopy(e){ e.preventDefault(); toast('النسخ غير مسموح أثناء الامتحان', true); }
+function preventContextMenu(e){ e.preventDefault(); }
+
+let blurTimeout = null;
+function handleWindowBlur(){
+  // تأخير بسيط لتفادي الإيجابيات الكاذبة (فتح لوحة مفاتيح على الموبايل مثلاً)
+  blurTimeout = setTimeout(()=>{ registerViolation(); }, 800);
+}
+function handleVisibilityChange(){
+  if(document.hidden){
+    // سيُتبع بحدث blur غالباً، لكن نرصد مباشرة كذلك لضمان الدقة
+    registerViolation();
+  } else {
+    if(blurTimeout) clearTimeout(blurTimeout);
+  }
+}
+
+let violationInProgress = false;
+async function registerViolation(){
+  if(violationInProgress) return;
+  if(!examSession.attemptId) return;
+  violationInProgress = true;
+
+  const { data: attempt } = await sb.from('exam_attempts').select('violation_count, status').eq('id', examSession.attemptId).single();
+  if(!attempt || attempt.status !== 'in_progress'){ violationInProgress = false; return; }
+
+  const newCount = (attempt.violation_count||0) + 1;
+
+  if(newCount >= 2){
+    // المخالفة الثانية: قفل نهائي
+    await sb.from('exam_attempts').update({ violation_count:newCount, status:'locked' }).eq('id', examSession.attemptId);
+    clearInterval(examSession.timerInterval);
+    deactivateAntiCheat();
+    showScreen('examLockedScreen');
+  } else {
+    // المخالفة الأولى: تحذير + تغيير ترتيب الأسئلة
+    const newOrder = shuffleArray(examSession.questions.map(q=>q.id));
+    await sb.from('exam_attempts').update({ violation_count:newCount, question_order:newOrder }).eq('id', examSession.attemptId);
+    examSession.questions = newOrder.map(id=> examSession.questions.find(q=>q.id===id)).filter(Boolean);
+    document.getElementById('violationBannerContainer').innerHTML = `
+      <div class="violation-banner">⚠️ تم رصد خروجك من صفحة الامتحان! تم تغيير ترتيب الأسئلة. الخروج مرة أخرى سيؤدي لقفل الامتحان نهائياً.</div>`;
+    renderExamTakingKeepAnswers();
+    toast('تحذير: تم رصد خروجك من الصفحة', true);
+  }
+  violationInProgress = false;
+}
+
+function renderExamTakingKeepAnswers(){
+  // إعادة رسم الأسئلة بالترتيب الجديد مع الحفاظ على الإجابات المدخلة
+  const bannerHtml = document.getElementById('violationBannerContainer').innerHTML;
+  renderExamTaking();
+  document.getElementById('violationBannerContainer').innerHTML = bannerHtml;
+}
+
+/* ---- التسليم والتصحيح التلقائي ---- */
+async function submitExam(){
+  if(!confirm('هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من التعديل بعد التسليم.')) return;
+  await finalizeSubmit(false);
+}
+
+async function finalizeSubmit(isAutoSubmit){
+  clearInterval(examSession.timerInterval);
+  deactivateAntiCheat();
+
+  let autoScore = 0;
+  let hasEssay = false;
+
+  for(const q of examSession.questions){
+    const studentAnswer = examSession.answers[q.id];
+    let isCorrect = null;
+    let awardedPoints = null;
+
+    if(q.question_type === 'mcq' || q.question_type === 'truefalse'){
+      isCorrect = studentAnswer === q.correct_answer;
+      awardedPoints = isCorrect ? q.points : 0;
+      autoScore += awardedPoints;
+    } else {
+      hasEssay = true;
+      awardedPoints = null; // بانتظار تصحيح المستر
+    }
+
+    await sb.from('student_answers').upsert({
+      attempt_id: examSession.attemptId, question_id: q.id,
+      answer_text: studentAnswer || '', is_correct: isCorrect, awarded_points: awardedPoints
+    }, { onConflict: 'attempt_id,question_id' });
+  }
+
+  const updatePayload = {
+    status: 'submitted', submitted_at: new Date().toISOString(), auto_score: autoScore
+  };
+  // لو مفيش مقالي، النتيجة النهائية جاهزة فوراً = auto_score
+  if(!hasEssay){ updatePayload.total_score = autoScore; }
+
+  await sb.from('exam_attempts').update(updatePayload).eq('id', examSession.attemptId);
+
+  showScreen('studentApp');
+  studentBackToMenu();
+  toast(isAutoSubmit ? 'انتهى الوقت، تم تسليم الامتحان تلقائياً' : 'تم تسليم الامتحان بنجاح');
+}
+</script>
+
+
+<script>
+/* ==========================================================
+   تصحيح المقالي (لوحة المستر)
+   ========================================================== */
+let correctionCache = [];
+let currentCorrectionAttempt = null;
+
+async function loadCorrectionList(){
+  // نجيب كل المحاولات المُسلَّمة واللي فيها أسئلة مقالي لسه محتاجة تصحيح
+  const { data: attempts, error } = await sb.from('exam_attempts')
+    .select('*, students(name, phone), exams(title, stage_id)')
+    .eq('status', 'submitted')
+    .is('total_score', null)
+    .order('submitted_at', {ascending:true});
+
+  if(error){ toast('فشل تحميل قائمة التصحيح', true); return; }
+  correctionCache = attempts || [];
+  renderCorrectionList();
+  document.getElementById('statPendingCorrection').textContent = correctionCache.length;
+}
+
+function renderCorrectionList(){
+  const container = document.getElementById('correctionListContainer');
+  container.innerHTML = '';
+  document.getElementById('correctionListEmpty').style.display = correctionCache.length?'none':'block';
+  correctionCache.forEach(a=>{
+    const div = document.createElement('div');
+    div.className = 'exam-card';
+    div.style.cursor = 'pointer';
+    div.onclick = ()=> openCorrectionDetail(a.id);
+    div.innerHTML = `
+      <div>
+        <div class="exam-title">${escapeHtml(a.students?.name || 'طالب')} — ${escapeHtml(a.exams?.title || '')}</div>
+        <span class="tag orange">بانتظار التصحيح</span>
+      </div>
+      <div>تصحيح ←</div>`;
+    container.appendChild(div);
+  });
+}
+
+async function openCorrectionDetail(attemptId){
+  const attempt = correctionCache.find(a=>a.id===attemptId);
+  if(!attempt){ toast('تعذر العثور على المحاولة', true); return; }
+  currentCorrectionAttempt = attempt;
+
+  document.getElementById('correctionListContainer').parentElement.querySelector('h2').nextElementSibling; // no-op safe
+  document.querySelector('#t-correction #correctionListContainer').classList.add('hidden');
+  document.getElementById('correctionListEmpty').classList.add('hidden');
+  document.querySelectorAll('#t-correction .card')[0].classList.add('hidden');
+  document.getElementById('correctionDetailView').classList.remove('hidden');
+  document.getElementById('correctionDetailTitle').textContent = attempt.exams?.title || '';
+  document.getElementById('correctionStudentName').textContent = '👤 ' + (attempt.students?.name || '');
+
+  const { data: questions } = await sb.from('exam_questions').select('*').eq('exam_id', attempt.exam_id).order('order_num');
+  const { data: answers } = await sb.from('student_answers').select('*').eq('attempt_id', attemptId);
+  const answersMap = {};
+  (answers||[]).forEach(a=> answersMap[a.question_id] = a);
+
+  const container = document.getElementById('correctionQuestionsContainer');
+  container.innerHTML = '';
+
+  (questions||[]).forEach((q,i)=>{
+    const ans = answersMap[q.id];
+    const div = document.createElement('div');
+    div.className = 'correction-item';
+
+    if(q.question_type === 'essay'){
+      div.innerHTML = `
+        <div class="correction-q">سؤال ${i+1} (مقالي) — من ${q.points} درجة</div>
+        <div style="margin-bottom:8px;">${escapeHtml(q.question_text)}</div>
+        <div class="correction-answer">${escapeHtml(ans?.answer_text || '(لم يُجب)')}</div>
+        <div class="points-input-row">
+          <label style="margin:0;">الدرجة الممنوحة:</label>
+          <input type="number" class="essay-score-input" data-question-id="${q.id}" data-max="${q.points}" min="0" max="${q.points}" value="${ans?.awarded_points ?? 0}">
+          <span>/ ${q.points}</span>
+        </div>`;
+    } else {
+      const isCorrect = ans?.is_correct;
+      div.innerHTML = `
+        <div class="correction-q">سؤال ${i+1} (${qTypeLabel(q.question_type)}) — ${isCorrect?'<span style="color:var(--success)">✓ صح</span>':'<span style="color:var(--danger)">✗ غلط</span>'} — ${ans?.awarded_points ?? 0}/${q.points}</div>
+        <div style="margin-bottom:4px;">${escapeHtml(q.question_text)}</div>
+        <div style="font-size:12.5px; color:var(--muted);">إجابة الطالب: ${escapeHtml(ans?.answer_text || '-')}</div>`;
+    }
+    container.appendChild(div);
+  });
+}
+
+function backToCorrectionList(){
+  document.getElementById('correctionDetailView').classList.add('hidden');
+  document.querySelector('#t-correction #correctionListContainer').classList.remove('hidden');
+  document.querySelectorAll('#t-correction .card')[0].classList.remove('hidden');
+  loadCorrectionList();
+}
+
+async function saveCorrectionScores(){
+  const inputs = document.querySelectorAll('.essay-score-input');
+  let manualTotal = 0;
+  let valid = true;
+
+  inputs.forEach(inp=>{
+    const val = parseFloat(inp.value);
+    const max = parseFloat(inp.dataset.max);
+    if(isNaN(val) || val < 0 || val > max){ valid = false; }
+  });
+  if(!valid){ toast('يرجى إدخال درجات صحيحة ضمن الحد الأقصى لكل سؤال', true); return; }
+
+  for(const inp of inputs){
+    const questionId = inp.dataset.questionId;
+    const score = parseFloat(inp.value) || 0;
+    manualTotal += score;
+    await sb.from('student_answers').update({ awarded_points: score }).eq('attempt_id', currentCorrectionAttempt.id).eq('question_id', questionId);
+  }
+
+  const totalScore = (currentCorrectionAttempt.auto_score || 0) + manualTotal;
+  const { error } = await sb.from('exam_attempts').update({ manual_score: manualTotal, total_score: totalScore }).eq('id', currentCorrectionAttempt.id);
+
+  if(error){ toast('فشل حفظ الدرجات', true); return; }
+  toast('تم حفظ الدرجات بنجاح');
+  backToCorrectionList();
+}
+
+/* ==========================================================
+   كل الطلاب (لوحة المستر)
+   ========================================================== */
+async function loadAllStudents(){
+  const stageFilter = document.getElementById('studentsFilterStage').value;
+  let query = sb.from('students').select('*, stages(name)').order('created_at', {ascending:false});
+  if(stageFilter) query = query.eq('stage_id', stageFilter);
+  const { data, error } = await query;
+  if(error){ toast('فشل تحميل الطلاب', true); return; }
+  renderAllStudents(data || []);
+  const { count } = await sb.from('students').select('*', { count:'exact', head:true });
+  document.getElementById('statStudents').textContent = count || 0;
+}
+
+function renderAllStudents(list){
+  const tbody = document.getElementById('allStudentsBody');
+  tbody.innerHTML = '';
+  document.getElementById('allStudentsEmpty').style.display = list.length?'none':'block';
+  list.forEach((s,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(s.name)}</td><td dir="ltr" style="text-align:left;">${escapeHtml(s.phone)}</td>
+      <td>${escapeHtml(s.stages?.name || '-')}</td>
+      <td class="row-actions">
+        <button class="btn small secondary" onclick='editStudentGlobal("${s.id}", ${JSON.stringify(s.name)}, ${JSON.stringify(s.phone)})'>✏️</button>
+        <button class="btn small danger" onclick="deleteStudentGlobal('${s.id}')">🗑</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteStudentGlobal(id){
+  if(!confirm('حذف هذا الطالب نهائياً؟ سيتم حذف كل محاولاته ودرجاته أيضاً.')) return;
+  const { error } = await sb.from('students').delete().eq('id', id);
+  toast(error?'فشل الحذف':'تم الحذف', !!error); loadAllStudents();
+}
+async function editStudentGlobal(id, oldName, oldPhone){
+  const newName = prompt('اسم الطالب:', oldName); if(newName===null) return;
+  const newPhone = prompt('رقم الهاتف:', oldPhone); if(newPhone===null) return;
+  const { error } = await sb.from('students').update({ name:newName.trim()||oldName, phone:newPhone.trim()||oldPhone }).eq('id', id);
+  toast(error?'فشل التعديل (ربما الرقم مستخدم)':'تم التعديل', !!error); loadAllStudents();
+}
+
+/* ==========================================================
+   الرئيسية (Home feed) - لوحة المستر
+   ========================================================== */
+async function loadHomeFeed(){
+  const [{data:units}, {data:hws}, {data:revs}, {data:exs}] = await Promise.all([
+    sb.from('curriculum_units').select('title').order('created_at',{ascending:false}).limit(3),
+    sb.from('assignments').select('title').order('created_at',{ascending:false}).limit(3),
+    sb.from('revisions').select('title').order('created_at',{ascending:false}).limit(3),
+    sb.from('exams').select('title').order('created_at',{ascending:false}).limit(3),
+  ]);
+  const items = [];
+  (units||[]).forEach(u=>items.push(`📘 باب منهج: <b>${escapeHtml(u.title)}</b>`));
+  (hws||[]).forEach(h=>items.push(`📝 واجب: <b>${escapeHtml(h.title)}</b>`));
+  (revs||[]).forEach(r=>items.push(`🔁 مراجعة: <b>${escapeHtml(r.title)}</b>`));
+  (exs||[]).forEach(e=>items.push(`🏆 امتحان: <b>${escapeHtml(e.title)}</b>`));
+  document.getElementById('homeFeed').innerHTML = items.length ? items.map(i=>`<div style="padding:8px 0;border-bottom:1px dashed #eee;">${i}</div>`).join('') : `<div class="empty-msg">لا توجد نشاطات بعد</div>`;
+}
+
+/* ==========================================================
+   تهيئة تطبيق المستر بالكامل
+   ========================================================== */
+async function initTeacherApp(){
+  await loadProfile();
+  await loadTeacherStageGrid();
+  await loadHomeFeed();
+  await loadAllStudents();
+}
+</script>
+
+
+<script>
+/* ==========================================================
+   تسجيل دخول / تسجيل الطالب
+   ========================================================== */
+const SESSION_KEY = "studentSessionPhone";
+let currentStudent = null;
+let studentPhoneCheckTimeout = null;
+
+// عند كتابة رقم الهاتف: تحقق هل هو مسجل بالفعل أم جديد
+document.getElementById('phoneInput').addEventListener('input', (e)=>{
+  clearTimeout(studentPhoneCheckTimeout);
+  const phone = e.target.value.trim();
+  document.getElementById('studentLoginError').textContent = '';
+  if(phone.length < 8){
+    document.getElementById('newStudentFields').classList.add('hidden');
+    return;
+  }
+  studentPhoneCheckTimeout = setTimeout(async ()=>{
+    const { data } = await sb.from('students').select('id').eq('phone', phone).maybeSingle();
+    if(!data){
+      // رقم جديد - أظهر خانة الاسم والمرحلة
+      document.getElementById('newStudentFields').classList.remove('hidden');
+      await loadStagesIntoSelect('newStudentStage', true);
+    } else {
+      document.getElementById('newStudentFields').classList.add('hidden');
+    }
+  }, 400);
+});
+
+async function doStudentLogin(){
+  const phone = document.getElementById('phoneInput').value.trim();
+  const errEl = document.getElementById('studentLoginError');
+  const btn = document.getElementById('studentLoginBtn');
+  errEl.textContent = '';
+  if(!phone){ errEl.textContent = 'يرجى إدخال رقم الهاتف'; return; }
+
+  btn.disabled = true; btn.textContent = '⏳ جارِ التحقق...';
+  const { data: existing } = await sb.from('students').select('*').eq('phone', phone).maybeSingle();
+
+  if(existing){
+    currentStudent = existing;
+    btn.disabled = false; btn.textContent = 'دخول';
+    sessionStorage.setItem(SESSION_KEY, phone);
+    showScreen('studentApp');
+    await loadStudentApp();
+    return;
+  }
+
+  // طالب جديد - لازم اسم ومرحلة
+  const name = document.getElementById('newStudentName').value.trim();
+  const stageId = document.getElementById('newStudentStage').value;
+  if(!name){ errEl.textContent = 'يرجى كتابة اسمك'; btn.disabled=false; btn.textContent='دخول'; return; }
+  if(!stageId){ errEl.textContent = 'يرجى اختيار المرحلة الدراسية'; btn.disabled=false; btn.textContent='دخول'; return; }
+
+  const { data: created, error } = await sb.from('students').insert({ phone, name, stage_id: stageId }).select().single();
+  btn.disabled = false; btn.textContent = 'دخول';
+  if(error){ errEl.textContent = 'حدث خطأ أثناء التسجيل، حاول مرة أخرى'; return; }
+
+  currentStudent = created;
+  sessionStorage.setItem(SESSION_KEY, phone);
+  showScreen('studentApp');
+  await loadStudentApp();
+}
+
+function doStudentLogout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+async function checkStudentSession(){
+  const savedPhone = sessionStorage.getItem(SESSION_KEY);
+  if(!savedPhone) return false;
+  const { data, error } = await sb.from('students').select('*').eq('phone', savedPhone).maybeSingle();
+  if(!error && data){ currentStudent = data; showScreen('studentApp'); await loadStudentApp(); return true; }
+  return false;
+}
+
+/* ==========================================================
+   واجهة الطالب - القائمة الرئيسية
+   ========================================================== */
+async function loadStudentApp(){
+  const { data: profile } = await sb.from('teacher_profile').select('*').limit(1).single();
+  const photo = (profile && profile.photo_url) ? profile.photo_url : defaultAvatar();
+  document.getElementById('studentHeaderPhoto').src = photo;
+  document.getElementById('studentHeaderName').textContent = (profile && profile.subtitle) ? profile.subtitle : 'منصة تعليم اللغة العربية';
+  document.getElementById('studentHeaderSubtitle').textContent = profile && profile.name ? `للأستاذ الفاضل ${profile.name}` : '';
+  document.getElementById('studentWelcome').textContent = `👋 أهلاً، ${currentStudent.name}`;
+
+  document.getElementById('studentStageChooser').classList.add('hidden');
+  document.getElementById('studentStageMenu').classList.remove('hidden');
+  studentBackToMenu();
+}
+
+document.querySelectorAll('.s-tab-legacy').forEach(()=>{}); // no-op placeholder
+
+function studentShowSection(sectionId){
+  document.querySelectorAll('.student-section').forEach(s=>s.classList.add('hidden'));
+  document.querySelector('.stage-menu-grid').classList.add('hidden');
+  document.getElementById('studentSectionBreadcrumb').classList.remove('hidden');
+  document.getElementById(sectionId).classList.remove('hidden');
+
+  if(sectionId==='s-curriculum') loadStudentCurriculum();
+  if(sectionId==='s-homework') loadStudentHomework();
+  if(sectionId==='s-revision') loadStudentRevisions();
+  if(sectionId==='s-exams') loadStudentExams();
+  if(sectionId==='s-grades') loadStudentGrades();
+}
+function studentBackToMenu(){
+  document.querySelectorAll('.student-section').forEach(s=>s.classList.add('hidden'));
+  document.querySelector('.stage-menu-grid').classList.remove('hidden');
+  document.getElementById('studentSectionBreadcrumb').classList.add('hidden');
+}
+
+/* ---- المنهج ---- */
+async function loadStudentCurriculum(){
+  const { data, error } = await sb.from('curriculum_units').select('*').eq('stage_id', currentStudent.stage_id).order('created_at', {ascending:true});
+  if(error){ toast('فشل تحميل المنهج', true); return; }
+  const list = data || [];
+  const container = document.getElementById('sCurriculumContainer');
+  container.innerHTML = '';
+  document.getElementById('sCurriculumEmpty').style.display = list.length?'none':'block';
+  const groups = {};
+  list.forEach(u=>{ if(!groups[u.category]) groups[u.category]=[]; groups[u.category].push(u); });
+  Object.keys(groups).forEach(cat=>{
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'category-group';
+    let itemsHtml = '';
+    groups[cat].forEach(u=>{
+      itemsHtml += `<div class="unit-item">
+        <div><div class="unit-title">${escapeHtml(u.title)}</div>${u.notes?`<div class="unit-notes">${escapeHtml(u.notes)}</div>`:''}</div>
+        ${u.pdf_url ? `<a class="btn small secondary" href="${escapeHtml(u.pdf_url)}" target="_blank">📄 فتح الملف</a>` : ''}
+      </div>`;
+    });
+    groupDiv.innerHTML = `<div class="category-title">📖 ${escapeHtml(cat)}</div>${itemsHtml}`;
+    container.appendChild(groupDiv);
+  });
+}
+
+/* ---- الواجبات ---- */
+async function loadStudentHomework(){
+  const { data } = await sb.from('assignments').select('*').eq('stage_id', currentStudent.stage_id).order('created_at', {ascending:false});
+  const list = data || [];
+  const tbody = document.getElementById('sHwBody');
+  tbody.innerHTML = '';
+  document.getElementById('sHwEmpty').style.display = list.length?'none':'block';
+  list.forEach((h,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(h.title)}</td><td>${escapeHtml(h.details||'-')}</td><td>${h.due_date||'-'}</td><td><span class="tag ${hwStatusColor(h.status)}">${escapeHtml(h.status)}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---- المراجعة ---- */
+async function loadStudentRevisions(){
+  const { data } = await sb.from('revisions').select('*').eq('stage_id', currentStudent.stage_id).order('created_at', {ascending:false});
+  const list = data || [];
+  const tbody = document.getElementById('sRevBody');
+  tbody.innerHTML = '';
+  document.getElementById('sRevEmpty').style.display = list.length?'none':'block';
+  list.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${escapeHtml(r.title)}</td><td>${escapeHtml(r.summary||'-')}</td><td>${r.rev_date||'-'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---- الامتحانات ---- */
+let studentExamsCache = [];
+async function loadStudentExams(){
+  const { data } = await sb.from('exams').select('*').eq('stage_id', currentStudent.stage_id).order('created_at', {ascending:false});
+  studentExamsCache = data || [];
+  const container = document.getElementById('sExamsContainer');
+  container.innerHTML = '';
+  document.getElementById('sExamsEmpty').style.display = studentExamsCache.length?'none':'block';
+
+  for(const ex of studentExamsCache){
+    const { data: attempt } = await sb.from('exam_attempts').select('*').eq('exam_id', ex.id).eq('student_id', currentStudent.id).maybeSingle();
+    let statusHtml = '';
+    let actionHtml = '';
+    if(!ex.is_active){
+      statusHtml = '<span class="tag red">موقوف حالياً</span>';
+    } else if(!attempt){
+      statusHtml = '<span class="tag green">متاح</span>';
+      actionHtml = `<button class="btn small" onclick="startExam('${ex.id}')">🚀 بدء الامتحان</button>`;
+    } else if(attempt.status === 'in_progress'){
+      statusHtml = '<span class="tag orange">جاري الأداء</span>';
+      actionHtml = `<button class="btn small" onclick="startExam('${ex.id}')">↩️ متابعة الامتحان</button>`;
+    } else if(attempt.status === 'locked'){
+      statusHtml = '<span class="tag red">مقفول 🔒</span>';
+      actionHtml = `<span style="font-size:12px; color:var(--muted);">تواصل مع المستر</span>`;
+    } else if(attempt.status === 'submitted'){
+      statusHtml = '<span class="tag green">تم التسليم ✅</span>';
+    }
+
+    const div = document.createElement('div');
+    div.className = 'exam-card';
+    div.innerHTML = `<div><div class="exam-title">🏆 ${escapeHtml(ex.title)}</div>
+      <span class="tag">${escapeHtml(ex.exam_type)}</span> <span class="tag">${ex.duration_minutes} دقيقة</span> ${statusHtml}</div>
+      <div>${actionHtml}</div>`;
+    container.appendChild(div);
+  }
+}
+
+/* ---- الدرجات ---- */
+async function loadStudentGrades(){
+  const { data: attempts } = await sb.from('exam_attempts').select('*, exams(title, exam_type)').eq('student_id', currentStudent.id).eq('status','submitted').order('submitted_at', {ascending:false});
+  const list = attempts || [];
+  const container = document.getElementById('sGradesContainer');
+  container.innerHTML = '';
+  document.getElementById('sGradesEmpty').style.display = list.length?'none':'block';
+  list.forEach(a=>{
+    const hasScore = a.total_score !== null && a.total_score !== undefined;
+    const div = document.createElement('div');
+    div.className = 'exam-card';
+    div.innerHTML = `<div><div class="exam-title">🏆 ${escapeHtml(a.exams?.title||'')}</div><span class="tag">${escapeHtml(a.exams?.exam_type||'')}</span></div>
+      <div class="${hasScore?'grade-good':''}">${hasScore ? a.total_score : 'بانتظار تصحيح المقالي'}</div>`;
+    container.appendChild(div);
+  });
+}
+</script>
+
+
+<script>
+/* ==========================================================
+   نقطة البداية الرئيسية
+   ========================================================== */
+async function init(){
+  await loadGateProfile();
+  const isTeacher = await checkTeacherSession();
+  if(isTeacher) return;
+  const isStudent = await checkStudentSession();
+  if(isStudent) return;
+  showScreen('gateScreen');
+}
+init();
+</script>
+
+
+</body>
+</html>
